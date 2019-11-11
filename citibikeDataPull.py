@@ -64,8 +64,3 @@ if __name__ == '__main__':
     df = import_data_to_dataframe(recentLinks)
     df = clean_data(df)
     quick_df_facts(df)
-<<<<<<< HEAD
-    
-=======
-    
->>>>>>> 024e465d1d579e6cb6ad18131f53624d1a7011eb
