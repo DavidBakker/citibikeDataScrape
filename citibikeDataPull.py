@@ -63,8 +63,7 @@ print(df.describe())
 
 df.to_csv('.\\citibikedata.csv')
 
-#conn = create_engine('postgresql://bakkerrs1:hfF(*$1j23@bakker-rscluster-1.cfxnz230wsra.us-east-2.redshift.amazonaws.com:7401/dev')
-#df.to_sql('citibike_data', conn, index=False, if_exists='append', chunksize=1000)
+
 
 
 print('Done')
