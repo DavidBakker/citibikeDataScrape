@@ -1,2 +1,3 @@
 # citibikeDataScrape
-Python script to crawl NYC Citibike's trip data and store in a pandas dataframe for later analysis
+Python script to crawl NYC Citibike's trip data, clean using pandas, and push to S3 for load into Redshift for analysis.
+
