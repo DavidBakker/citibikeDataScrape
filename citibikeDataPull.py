@@ -5,10 +5,15 @@
 
 import os
 import requests
-import time
+from functools import wraps
+from time import time
+from io import StringIO
 
 import pandas as pd
 from selenium import webdriver
+import boto3
+import settings
+
 
 
 def get_links_from_page(source):
@@ -22,45 +27,80 @@ def get_links_from_page(source):
     return links
 
 
-def import_data_to_dataframe(files):
-    dataFrame = pd.DataFrame()
-    for i in files:
+def timing(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        start = time()
+        result = f(*args, **kwargs)
+        end = time()
+        print('Elapsed time: {}'.format(end-start))
+        return result
+    return wrapper
+
+
+class CsvObject(object):
+    
+    def __init__(self, link):
+        self.link = link
+        self.filename = os.path.basename(self.link).replace('.zip', '')
+        self.dataframe = pd.DataFrame()
+
+
+    @timing
+    def import_data(self):
         try:
-            print('Opening ' + os.path.basename(i) + '...')
-            newDf = pd.read_csv(i, index_col=False)
-            print('Appending data...')
-            dataFrame = pd.concat([dataFrame, newDf])
+            print('Opening ' + self.filename + '...')
+            self.dataframe = pd.read_csv(self.link, index_col=False)
+            print('Importing data...')
         except Exception as err:
             print('***ERROR*** ' +str(err))
-    print('Import Complete.')
-    return dataFrame
 
 
-def clean_data(dataframe):
-    print('Cleaning data.')
-    dataframe = dataframe.dropna()
-    dataframe = dataframe.drop_duplicates()
-    dataframe.columns = dataframe.columns.str.replace(' ', '_')
-    dataframe[['usertype', 'gender']].apply(lambda x: x.astype('category'))
-    dataframe[['starttime', 'stoptime']] = df[['starttime', 'stoptime']].apply(pd.to_datetime)
-    assert dataframe.notnull().all().all()
-    return dataframe
+    @timing
+    def clean_data(self):
+        print('Cleaning ' + self.filename)
+        self.dataframe.dropna()
+        self.dataframe.columns = self.dataframe.columns.str.replace(' ', '_')
+        self.dataframe[['usertype', 'gender']].apply(lambda x: x.astype('category'))
+        self.dataframe[['starttime', 'stoptime']].apply(pd.to_datetime)
 
 
-def quick_df_facts(dataframe):
-    print('Quick facts:')
-    print('\n\nTop 5\n')
-    print(dataframe.head())
-    print('\n\nTypes\n')
-    print(dataframe.info())
-    print('\n\nDescribe \n')
-    print(dataframe.describe())
+    @timing
+    def quick_facts(self):
+        print('Quick facts:')
+        print('\n\nTop 5\n')
+        print(self.dataframe.head())
+        print('\n\nTypes\n')
+        print(self.dataframe.info())
+        print('\n\nDescribe \n')
+        print(self.dataframe.describe())
+
+
+    @timing
+    def upload_to_S3(self):
+        session = boto3.Session(
+            aws_access_key_id=settings.AWS_SERVER_PUBLIC_KEY,
+            aws_secret_access_key=settings.AWS_SERVER_SECRET_KEY,
+            )
+        csv_buffer = StringIO()
+        self.dataframe.to_csv(csv_buffer)
+        s3_resource = boto3.resource('s3')
+        s3_resource.Object('dbpersonalstorage', self.filename).put(Body=csv_buffer.getvalue())
+
 
 
 if __name__ == '__main__':
     sourceURL = 'https://s3.amazonaws.com/tripdata/index.html' 
     allLinks = get_links_from_page(sourceURL)
     recentLinks = [i for i in allLinks if os.path.basename(i).startswith('2018')]
-    df = import_data_to_dataframe(recentLinks)
-    df = clean_data(df)
-    quick_df_facts(df)
+    
+    for u in recentLinks:
+        u = CsvObject(u)
+        u.import_data()
+        u.clean_data()
+        u.upload_to_S3()
+
+
+
+
+
