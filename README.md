@@ -1,5 +1,5 @@
 # citibikeDataScrape
-Python script to crawl NYC Citibike's trip data, clean using pandas, and push to S3 for load into Redshift for analysis.
+Python script to crawl NYC Citibike's trip data, do a quick rough clean, and push to S3 for load into Redshift for analysis.
 
 I created this because the stations near me are usually empty in the morning, even though I have some good trains within a 5 min walk from here. I wanted to see what the ebb and flow was for my closest stations, though I probably won't post that data here since I don't want the entire internet to be able to triangulate where my apartment is. :-)
 
