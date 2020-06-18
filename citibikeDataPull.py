@@ -15,7 +15,7 @@ import boto3
 import settings
 
 
-
+#TODO throw into helper class
 def get_links_from_page(source):
     browser = webdriver.Firefox()
     browser.get(source)
